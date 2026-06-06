@@ -7,7 +7,11 @@ app = Flask(__name__)
 ORIGINAL_API_URL = "http://Api.subhxcosmo.in/api"
 ORIGINAL_API_KEY = os.environ.get("API_KEY", "KRISHRDP2")
 
-@app.route('/api')
+@app.route('/')
+def index():
+    return jsonify({"status": "running", "usage": "/api?type=...&term=..."})
+
+@app.route('/api', strict_slashes=False)
 def proxy():
     req_type = request.args.get('type')
     term = request.args.get('term')
@@ -41,6 +45,3 @@ def proxy():
         })
     else:
         return jsonify({"error": data.get('message', 'Invalid response from original API')}), 500
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
