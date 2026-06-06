@@ -9,38 +9,38 @@ ORIGINAL_API_KEY = os.environ.get("API_KEY", "KRISHRDP2")
 
 @app.route('/api')
 def proxy():
-    # Extract parameters from the incoming request
     req_type = request.args.get('type')
     term = request.args.get('term')
-    
-    # Prepare parameters for the original API
+
+    if not req_type or not term:
+        return jsonify({"error": "Missing type or term parameter"}), 400
+
     params = {
         'key': ORIGINAL_API_KEY,
         'type': req_type,
         'term': term
     }
-    
-    # Fetch data from the original API
+
     try:
-        response = requests.get(ORIGINAL_API_URL, params=params)
+        response = requests.get(ORIGINAL_API_URL, params=params, timeout=15)
         data = response.json()
     except Exception as e:
         return jsonify({"error": "Failed to fetch data", "details": str(e)}), 500
-    
-    # Clone and modify the response data
+
     if data.get('success') and 'result' in data:
-        # Keep only country_code and number, then change the credit
-        modified_result = {
-            'country_code': data['result'].get('country_code'),
-            'number': data['result'].get('number')
-        }
-        cloned_data = {
+        result = data['result']
+        if not result.get('success'):
+            return jsonify({"error": result.get('msg', 'Not found')}), 404
+
+        return jsonify({
             "developer": "helper man",
-            "data": modified_result
-        }
-        return jsonify(cloned_data)
+            "data": {
+                "country_code": result.get('country_code'),
+                "number": result.get('number')
+            }
+        })
     else:
-        return jsonify({"error": "Invalid response from original API"}), 500
+        return jsonify({"error": data.get('message', 'Invalid response from original API')}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
